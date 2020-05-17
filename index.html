@@ -1,0 +1,64 @@
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="text-align:center; background:linear-gradient(30deg, #ffccee,#ffeecc, #ffeeff, #ffddbb);">
+<input type="file" id="file_input" multiple>
+<h2>Brillo (add): <input type="number" value="0" id="b" onchange="generarImagen()" disabled>
+Contraste (div): <input type="number" value="0" id="c" onchange="generarImagen()" disabled>
+</h2>
+<hr/>
+<img id="resultado" style="width:100%;">
+<script>
+/////Photo-Mean by @Juanmv94/////
+var sumarr,w,h,l;
+var ib=document.getElementById("b"),ic=document.getElementById("c");
+document.getElementById("file_input").addEventListener('change', function (e) {
+    var URL = window.webkitURL || window.URL;
+    var promimgs = Array.from(e.target.files).map(f=>loadImage(URL.createObjectURL(f)));
+    Promise.all(promimgs).then(cargarImagen);
+});
+
+function loadImage(url) {
+	return new  Promise(resolve => {
+		const image = new Image();
+		image.addEventListener('load', () => {
+			resolve(image);
+		});
+		image.src = url; 
+	});
+}
+
+function cargarImagen(arrimgs) {
+	var canvas = document.createElement('canvas');
+	var ctx=canvas.getContext('2d');
+	w=arrimgs[0].width; h=arrimgs[0].height; l=arrimgs.length;
+	sumarr=new Uint32Array(w*h*4);
+	canvas.width = w;
+	canvas.height = h;
+	arrimgs.forEach(img=>{
+		ctx.clearRect(0,0,w,h);
+		ctx.drawImage(img,0,0,w,h);
+		var imgdatad=ctx.getImageData(0,0,w,h).data;
+		for (let i=0;i<imgdatad.length;i++) sumarr[i]+=imgdatad[i];
+	});
+	ib.disabled=false; ic.disabled=false;
+	ic.value=l; ib.value=0;
+	generarImagen();
+}
+
+function generarImagen() {
+	var canvasf= document.createElement('canvas');		//Creamos canvas definitivo
+	var ctxf=canvasf.getContext('2d');
+	canvasf.width = w;
+	canvasf.height = h;
+	var imgdata=ctxf.createImageData(w,h);
+	var imgdatad=imgdata.data;
+	var cn=parseInt(ic.value), br=parseInt(ib.value);
+	for (let i=0;i<imgdatad.length;i++) imgdatad[i]=((i%4)==3)?(sumarr[i]/l):(sumarr[i]/cn+br);
+	ctxf.putImageData(imgdata,0,0);
+	resultado.src=canvasf.toDataURL("image/png");
+}
+</script>
+</body>
+</html>
